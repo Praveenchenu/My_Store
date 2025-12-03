@@ -1,0 +1,108 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block body %}
+
+
+
+<h2 class="text-center my-4">Products Menu</h2>
+<!-- <h1>Items in {{ category.name}}</h1> -->
+<div class="container">
+  <div class="row g-4 justify-content-center">
+    {% for item in products %}
+    <div class="col-md-4 col-lg-3 d-flex justify-content-center">
+      <div class="card shadow" style="width: 18rem; border-radius: 15px; overflow: hidden;">
+
+        {% if item.image %}
+        <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.product }}"
+          style="height: 200px; object-fit: cover;">
+        {% else %}
+        <img src="{% static 'app/images/no-image.jpg' %}" class="card-img-top" alt="No image available"
+          style="height: 200px; object-fit: cover;">
+        {% endif %}
+
+        <div class="card-body text-center">
+          <h5 class="card-title">
+            <p style="text-decoration:none; color:inherit;">
+              {{ item.product }}
+            </p>
+          </h5>
+          <p class="card-text text-muted" style="min-height: 40px;">
+            {{ item.description }}<br>
+            {{item.created_at}}
+          </p>
+          <h6 class="text-success mb-3">₹ {{ item.price }}</h6>
+          <a href="{% url 'app:details' item.pk %}" class="btn btn-warning">View Details</a>
+          <br>
+          Added by: <a href="" class="me-10">{{ item.user.username }}</a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center">
+      <p>No products available</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- <div class="d-flex justify-content-center">
+    {% if page_obj.has_previous %}
+    <a href="?page={{page_obj.previous_page_number}}">Previous</a>
+    {% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{page_obj.next_page_number}}">Next</a>
+    {% endif %}
+  </div> -->
+
+  <div class="d-flex justify-content-center align-items-center mt-4">
+    {% if products.has_previous %}
+    <a href="?page={{ products.previous_page_number }}" class="btn btn-outline-primary btn-sm me-2">
+      &laquo; Previous
+    </a>
+    {% else %}
+    <button class="btn btn-outline-secondary btn-sm me-2" disabled>
+      &laquo; Previous
+    </button>
+    {% endif %}
+
+    <span class="mx-3 fw-semibold">
+      Page {{ products.number }} of {{ products.paginator.num_pages }}
+    </span>
+
+    {% if products.has_next %}
+    <a href="?page={{ products.next_page_number }}" class="btn btn-outline-primary btn-sm ms-2">
+      Next &raquo;
+    </a>
+    {% else %}
+    <button class="btn btn-outline-secondary btn-sm ms-2" disabled>
+      Next &raquo;
+    </button>
+    {% endif %}
+  </div>
+
+
+  <div id="about" class="about-section mt-5 p-4 bg-light rounded shadow text-center">
+    <h3>About Our Food App</h3>
+    <p style="max-width:700px; margin:auto; font-size:16px; color:#555;">
+      Welcome to our Food Menu App! We offer a variety of delicious meals, made with fresh ingredients and delivered
+      fast to your doorstep.
+      Explore our menu, choose your favorite dishes, and enjoy a seamless ordering experience!
+    </p>
+    <!-- <img src="{% static 'app/images/about-food.jpg' %}" alt="About Us" style="max-width:400px; width:100%; border-radius:10px; margin-top:15px;">
+  </div> -->
+
+  </div>
+  <!-- <nav class="pag d-flex justify-content-center my-3 me-7" aria-label="Page navigation example" >
+  <ul class="pagination">
+    <li class="page-item"><a class="page-link" href="#">Previous</a></li>
+    <li class="page-item"><a class="page-link" href="#">1</a></li>
+    <li class="page-item"><a class="page-link" href="#">2</a></li>
+    <li class="page-item"><a class="page-link" href="#">3</a></li>
+    <li class="page-item"><a class="page-link" href="#">Next</a></li>
+  </ul>
+</nav> -->
+
+</div>
+
+
+{% endblock %}

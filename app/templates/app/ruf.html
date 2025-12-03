@@ -1,0 +1,278 @@
+<!-- <nav class="navbar navbar-expand-lg navbar-dark ">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">MyStore</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                     <div class="collapse navbar-collapse" id="navMenu">
+                        
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Loggedin</a>
+                                {% if user.is_authenticated %}
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url 'users:logout' %}">LogOut</a>
+                                    </li>
+                                    {% else %}
+                                    <li><a class="dropdown-item" href="{% url 'users:login' %}">Login</a>
+                                    </li>
+                                    
+                                </ul>
+                                {% endif %}
+                            </li>
+                        </ul>
+                        </li>
+                        </div>
+                        <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="{% url 'app:home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="{% url 'app:create_item' %}">Add</a>
+                    </li>
+                   
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% if messages %}
+        {% for message in messages %}
+        <div class="message">
+            {{ message }} 
+        </div>
+        {% endfor %}
+        {% endif %} 
+    {% block body %}
+
+    {% endblock %} -->
+
+    <ul class="navbar-nav me-auto">
+                            <li><span>{{ user.username }}</span></li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Loggedin</a>
+
+                                <ul class="dropdown-menu">
+
+                                    <li><a class="dropdown-item" href="#">{{ user.email }}</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'users:logout' %}">Logout</a>
+                                    </li>
+
+                                    <!-- <li><a class="dropdown-item" href="{% url 'users:login' %}">Login</a>
+                                    </li> -->
+
+                                </ul>
+
+                            </li>
+                        </ul>
+
+<!-- {% extends 'app/base.html' %}
+{% block body %}
+
+<h1>{{user.username}}</h1>
+<h3>{{user.email}}</h3>
+<h3>{{user.profile.location}}</h3>
+<img src="{{user.profile.image.url}}" alt="{{user.username}}">
+
+{% endblock%} -->
+
+<li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:login' %}">Login</a>
+                    </li>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body class="container my-3">
+
+
+  <form action="" method="POST">
+    {% csrf_token %}
+    {{form.non_fields_errors}}
+
+    <div class="mb-3">
+      <label for="">UserName: </label>
+      {{ form.username.errors}}
+      {{ form.username }}
+    </div>
+
+    <div class="mb-3">
+      <label for="">Email: </label>
+      {{ form.email.errors }}
+      {{ form.email }}
+    </div>
+
+    <div class="mb-3">
+      <label for="">Password1: </label>
+      {{ form.password1.errors }}
+      {{ form.password1 }}
+    </div>
+
+    <div class="mb-3">
+      <label for="">Password2: </label>
+      {{ form.password2.errors }}
+      {{ form.password2 }}
+    </div>
+    <button href="{% url 'app:home' %}">Signin</button>
+  </form>
+
+  <p></p>
+</body>
+
+</html>
+
+{% extends 'app/base.html' %}
+{% block body %}
+    <form method="POST" enctype="multipart/form-data" >
+        {% csrf_token %}
+        {{ form.as_p}}
+        <button type="submit"  class="btn btn-success">Save</button>
+</form>
+{% endblock %}
+
+1. List deleted items (see what's available)
+from app.models import Item
+for x in Item.everything.filter(is_deleted=True):
+    print(x.pk, repr(x.product), x.deleted_at)
+
+2. Find a deleted item by product (case-insensitive) and inspect it safely
+
+i = Item.everything.filter(product__icontains='pizza').first()
+if not i:
+    print('No deleted item matching "pizza"')
+else:
+    print('Found:', i.pk, i.product, i.is_deleted, i.deleted_at)
+
+3. Restore (un-delete) a single instance safely
+i = Item.everything.filter(pk=123).first()   # change 123 to the actual pk you saw
+if i:
+    i.is_deleted = False
+    i.deleted_at = None
+    i.save(update_fields=['is_deleted', 'deleted_at'])
+    print('Restored', i)
+else:
+    print('Item not found')
+
+4. Restore by product name (if you know the product text)
+
+i = Item.everything.filter(product__iexact='Pizza').first()  # or use icontains
+if i:
+    i.is_deleted = False
+    i.deleted_at = None
+    i.save(update_fields=['is_deleted','deleted_at'])
+    print('Restored', i)
+else:
+    print('No matching deleted item')
+
+5. Bulk restore all deleted items (fast; note: bypasses model.save() hooks)
+Item.everything.filter(is_deleted=True).update(is_deleted=False, deleted_at=None)
+
+6.Soft-delete an item using your model method (you have both names)
+i = Item.everything.filter(pk=5).first()
+if i:
+    i.soft_delete()   # or i.soft_delet()
+else:
+    print('Item not found')
+
+     <!-- .black-rectangle {
+            width: 100%;
+            height: 250px;
+            background-color: black;
+            margin: 20px auto; 
+            border-radius: 10px; 
+        } -->
+
+
+
+<!-- Navbar -->
+  <!-- <nav class="navbar d-flex justify-content-between align-items-center">
+    <h2 class="fw-bold">Shoppit</h2>
+
+    <form method="GET" action="{% url 'app:search' %}" class="search-box">
+      <input type="text" name="q" placeholder="Search Products" value="{{ request.GET.q }}">
+      <button type="submit">🔍</button>
+    </form>
+
+    <div>
+      <a href="{% url 'users:login' %}" class="btn btn-dark me-2">Login</a>
+      <a href="#" class="btn btn-outline-dark">🛒</a>
+    </div> -->
+
+
+ detail page
+{% extends 'app/base.html' %}
+{% load static %}
+{% block body %}
+<div class="container my-5 d-flex justify-content-center">
+  <div class="card shadow-lg" style="width: 28rem; border-radius: 15px; overflow: hidden;">
+
+    {% if single_value.image %}
+    <img src="{{ single_value.image.url }}" class="card-img-top" alt="{{ single_value.product }}"
+      style="height: 250px; object-fit: cover;">
+    {% else %}
+    <img src="{% static 'app/images/no-image.jpg' %}" class="card-img-top" alt="No image available"
+      style="height: 250px; object-fit: cover;">
+    {% endif %}
+
+    <div class="card-body text-center">
+      <h3 class="card-title">{{ single_value.product }}</h3>
+      <p class="card-text text-muted">{{ single_value.description }}</p>
+      <h4 class="text-success mb-3">₹ {{ single_value.price }}</h4>
+      <div class="d-flex justify-content-center gap-2">
+
+        <a href="{% url 'app:update_item' single_value.id  %}" class="btn btn-primary">Edit</a>
+        <a href="{% url 'app:delet_item' single_value.id %}" class="btn btn-outline-danger">Delet</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+#cards
+  <!-- <h1>Items in {{ category.name}}</h1> -->
+  <!-- <div class="container">
+    <div class="row g-3 justify-content-center">
+      {% for item in page_obj %}
+      <div class="col-md-4 col-lg-3 d-flex justify-content-center">
+        <div class="card shadow" style="width: 18rem; border-radius: 15px; overflow: hidden;">
+
+          {% if item.image %}
+          <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.product }}"
+            style="height: 200px; object-fit: cover;">
+          {% else %}
+          <img src="{% static 'app/images/no-image.jpg' %}" class="card-img-top" alt="No image available"
+            style="height: 200px; object-fit: cover;">
+          {% endif %}
+
+          <div class="card-body text-center">
+            <h5 class="card-title">
+              <p style="text-decoration:none; color:inherit;">
+                {{ item.product }}
+              </p>
+            </h5>
+            <p class="card-text text-muted" style="min-height: 40px;">
+              {{ item.description|truncatechars:15 }}<br>
+              {{item.created_at}}
+            </p>
+            <h6 class="text-success mb-3">₹ {{ item.price }}</h6>
+            <a href="{% url 'app:details' item.pk %}" class="btn btn-warning">View Details</a>
+            <br>
+            Added by: <a href="" class="me-10">{{ item.user.username }}</a>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12 text-center">
+        <p>No products available</p>
+      </div>
+      {% endfor %}
+    </div> -->

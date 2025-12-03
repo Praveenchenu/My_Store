@@ -1,0 +1,47 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block body %}
+<div class="d-flex justify-content-center">
+    <h2>Search Results for <strong>{{ query }}</strong> </h2>
+</div>
+<div class="container mt-4">
+    <div class="row g-4 justify-content-center">
+        {% if results %}
+        {% for item in results %}
+        <div class="col-md-3 col-sm-6 mb-4 d-flex justify-content-center">
+            <div class="card shadow-sm" style="width: 18rem; border-radius: 15px; overflow: hidden;">
+
+                {% if item.image %}
+                <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.product }}"
+                    style="height: 200px; object-fit: cover;">
+                {% else %}
+                <img src="{% static 'app/images/no-image.jpg' %}" class="card-img-top" alt="No image available"
+                    style="height: 200px; object-fit: cover;">
+                {% endif %}
+
+                <div class="card-body text-center">
+                    <h5 class="card-title">
+                        <p style="text-decoration:none; color:inherit;">
+                            {{ item.product }}
+                        </p>
+                    </h5>
+                    <p class="card-text text-muted" style="min-height: 40px;">
+                        {{ item.description }}
+                    </p>
+                    <h6 class="text-success mb-3">₹ {{ item.price }}</h6>
+                    <a href="{% url 'app:details' item.pk %}" class="btn btn-primary">View Details</a>
+                    <br>
+                    Added by: <a href="">{{ item.user.username }}</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<p>No Result Found</p>
+{% endif %}
+<div class="d-flex justify-content-center">
+<a href="{% url 'app:home' %}" class=" btn btn-warning  mb-3 my-3">Back</a>
+</div>
+{% endblock %}

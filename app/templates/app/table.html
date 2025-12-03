@@ -1,0 +1,176 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block body %}
+
+
+<style>
+  .black-rectangle {
+    width: 100%;
+    height: 350px;
+    background-color: black;
+    margin: 20px auto;
+    border-radius: 10px;
+  }
+
+    body {
+      background-color: #fff;
+      font-family: 'Poppins', sans-serif;
+      box-shadow: #e21212;
+    }
+    
+    .search-box {
+      border: 2px solid black;
+      border-radius: 50px;
+      padding: 0.3rem 1rem;
+      display: flex;
+      align-items: center;
+      width: 400px;
+    }
+    .search-box input {
+      border: none;
+      outline: none;
+      flex: 1;
+      font-size: 1rem;
+    }
+    .search-box button {
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+    .product-card {
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      text-align: center;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      transition: transform 0.2s ease-in-out;
+    }
+    .product-card:hover {
+      transform: scale(1.03);
+    }
+    .product-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+    .btn-buy {
+      background-color: black;
+      color: white;
+      border: none;
+      padding: 0.5rem 1.5rem;
+      border-radius: 5px;
+      margin-top: 0.5rem;
+      transition: 0.3s;
+      text-decoration: none;
+      display: inline-block;
+    }
+      
+    
+    .btn-buy:hover, .btn-buy:focus {
+      text-decoration: none;
+      color: #fff;
+    }
+    
+    .btn-buy:hover {
+      background-color: #333;
+    }
+  </style>
+
+
+
+  <div class="container mt-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-secondary">All Products</h2>
+    <a href="{% url 'app:create_item' %}" class="btn btn-success">
+      <i class="bi bi-plus-circle"></i> Add New Product
+    </a>
+  </div>
+  </div>
+  
+
+  <!-- Product Grid -->
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+
+      {% for item in page_obj %}
+      <div class="col-md-4 col-lg-3 d-flex justify-content-center">
+        <div class="product-card">
+          
+          {% if item.image %}
+            <img src="{{ item.image.url }}" alt="{{ item.product }}">
+          {% else %}
+            <img src="{% static 'app/images/no-image.jpg' %}" alt="No image available">
+          {% endif %}
+
+          <h5 class="mt-3">{{ item.product }}</h5>
+          
+          <h6 class="text-success mb-2">₹ {{ item.price }}</h6>
+
+          <a href="{% url 'app:details' item.pk %}" class="btn-buy">View Details</a><br>
+          <small class="text-muted">Added by: {{ item.user.username }}</small>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12 text-center">
+        <p>No products available</p>
+      </div>
+      {% endfor %}
+
+    </div>
+  </div>
+
+    <!-- <div class="d-flex justify-content-center">
+    {% if page_obj.has_previous %}
+    <a href="?page={{page_obj.previous_page_number}}">Previous</a>
+    {% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{page_obj.next_page_number}}">Next</a>
+    {% endif %}
+  </div> -->
+
+    <div class="d-flex justify-content-center align-items-center mt-4">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline-primary btn-sm me-2">
+        &laquo; Previous=
+      </a>
+      {% else %}
+      <button class="btn btn-outline-secondary btn-sm me-2" disabled>
+        &laquo; Previous
+      </button>
+      {% endif %}
+
+      <span class="mx-3 fw-semibold">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline-primary btn-sm ms-2">
+        Next &raquo;
+      </a>
+      {% else %}
+      <button class="btn btn-outline-secondary btn-sm ms-2" disabled>
+        Next &raquo;
+      </button>
+      {% endif %}
+    </div>
+
+
+    <div id="about" class="about-section mt-5 p-4 bg-light rounded shadow text-center">
+      <h3>About Our Food App</h3>
+      <p style="max-width:700px; margin:auto; font-size:16px; color:#555;">
+        Welcome to our Food Menu App! We offer a variety of delicious meals, made with fresh ingredients and delivered
+        fast to your doorstep.
+        Explore our menu, choose your favorite dishes, and enjoy a seamless ordering experience!
+      </p>
+      <!-- <img src="{% static 'app/images/about-food.jpg' %}" alt="About Us" style="max-width:400px; width:100%; border-radius:10px; margin-top:15px;">
+  </div> -->
+
+    </div>
+   
+
+  </div>
+
+
+  {% endblock %}
