@@ -1,8 +1,9 @@
 pipeline {
     agent any
-    tools {
-        maven 'maven'
-    }
+    
+    // Tools block is removed as Maven is not needed
+    // The Python steps will rely on system-installed Python/pip 
+    // or a base image in the Docker step.
 
     stages {
         stage ('checkout') {
@@ -10,23 +11,26 @@ pipeline {
                 echo 'Checking out source code...'
                 git branch: 'master', url: 'https://github.com/Praveenchenu/My_Store.git'
             }
+        } 
+
+        // --- NEW PYTHON DEPENDENCY STAGE ---
+        stage ('Install Dependencies') {
+            steps {
+                echo 'Installing Python dependencies...'
+                // Assuming you have a virtual environment setup or Python is available
+                sh 'pip install -r requirements.txt' 
+                // Note: The Docker build will handle the final dependencies for the image.
+            }
         }
 
-        stage ('build') {
-    steps {
-        echo 'Building the project...'
-        // Assuming your pom.xml is in a subdirectory named 'My_Store'
-        dir('My_Store') { 
-            sh 'mvn clean install'
-        }
-    }
-}
-
+        // --- SONARQUBE ANALYSIS (Using Sonar Scanner for Generic Projects) ---
         stage ('sonarQube') {
             steps {
-                sh 'ls -ltr'
+                echo 'Running SonarQube analysis...'
+                // Use SonarScanner for non-Maven projects. This requires a 
+                // sonar-project.properties file in the root of the repository.
                 sh '''
-                    mvn sonar:sonar \
+                    sonar-scanner \
                     -Dsonar.projectKey=sonar-token \
                     -Dsonar.host.url=http://3.1.196.239:9000 \
                     -Dsonar.login=sqa_bbadc1a60d2a2ec37ba1dbbc31bcd7598a548d3e
@@ -34,25 +38,21 @@ pipeline {
             }
         }
 
-        stage ('build artifacts') {
-            steps {
-                echo 'Building artifacts...'
-                sh 'mvn package'
-            }
-        }
+        // --- ARTIFACT BUILD STAGE REMOVED ---
+        // Artifact build is inherent in the Docker image creation for Python projects.
 
         stage ('Docker Build') {
             steps {
-                echo 'Building Docker image...'
+                echo 'Building and pushing Docker image...'
+                // Using Groovy string for variable interpolation 
                 sh "docker build -t praveenkumar446/django-image:latest:${env.BUILD_NUMBER} ."
             }
         }
-
+        
         stage ('push to registry') {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'docker-hub-credentials', variable: 'DOCKER_HUB_PASSWORD')]) {
-                        // NOTE: Corrected variable name from 'dockerhub' to 'DOCKER_HUB_PASSWORD' for clarity in the sh block
                         sh '''
                             echo $DOCKER_HUB_PASSWORD | docker login -u praveenkumar446 --password-stdin
                             docker push praveenkumar446/django-image:latest:${BUILD_NUMBER}
@@ -65,8 +65,7 @@ pipeline {
         stage ('update deployment files') {
             steps {
                 echo 'Updating deployment files...'
-                // NOTE: The withCredentials is not strictly needed here if the credential variable isn't used in the sed command.
-                // However, if the stage structure was intended to be separate, it's safer to keep the credential scope narrow.
+                // Using Groovy string for variable interpolation
                 sh "sed -i 's|image: praveenkumar446/django-image:.*|image: praveenkumar446/django-image:latest:${env.BUILD_NUMBER}|' k8s/deployment.yaml"
             }
         }
