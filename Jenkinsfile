@@ -1,73 +1,186 @@
 pipeline {
     agent any
-    
-    // Tools block is removed as Maven is not needed
-    // The Python steps will rely on system-installed Python/pip 
-    // or a base image in the Docker step.
+
+    environment {
+        DOCKER_IMAGE = "praveenkumar446/django-image"
+        SCANNER_HOME = tool 'SonarScanner'
+        VENV_DIR = ".venv"
+    }
 
     stages {
-        stage ('checkout') {
-            steps {
-                echo 'Checking out source code...'
-                git branch: 'master', url: 'https://github.com/Praveenchenu/My_Store.git'
-            }
-        } 
 
-        // --- NEW PYTHON DEPENDENCY STAGE ---
-        stage ('Install Dependencies') {
+        /* ---------------------------
+           Checkout Source Code
+        ----------------------------*/
+        stage('Checkout') {
             steps {
-                echo 'Installing Python dependencies...'
-                // Assuming you have a virtual environment setup or Python is available
-                sh 'pip install -r requirements.txt' 
-                // Note: The Docker build will handle the final dependencies for the image.
+                echo "Cloning repository..."
+                git branch: 'master', url: 'https://github.com/Praveenchenu/My_Store.git'
             }
         }
 
-        // --- SONARQUBE ANALYSIS (Using Sonar Scanner for Generic Projects) ---
-        stage ('sonarQube') {
+        /* ---------------------------
+           Python Virtual Environment
+        ----------------------------*/
+        stage('Setup Python Virtual Environment') {
             steps {
-                echo 'Running SonarQube analysis...'
-                // Use SonarScanner for non-Maven projects. This requires a 
-                // sonar-project.properties file in the root of the repository.
                 sh '''
-                    sonar-scanner \
-                    -Dsonar.projectKey=sonar-token \
-                    -Dsonar.host.url=http://3.1.196.239:9000 \
-                    -Dsonar.login=sqa_bbadc1a60d2a2ec37ba1dbbc31bcd7598a548d3e
+                    sudo apt update
+                    sudo apt install -y python3.12-venv
+                    
+                    python3 -m venv ${VENV_DIR}
+                    . ${VENV_DIR}/bin/activate
+                    pip install --upgrade pip
                 '''
             }
         }
 
-        // --- ARTIFACT BUILD STAGE REMOVED ---
-        // Artifact build is inherent in the Docker image creation for Python projects.
-
-        stage ('Docker Build') {
+        /* ---------------------------
+           Linting - flake8
+        ----------------------------*/
+        stage('Linting - flake8') {
             steps {
-                echo 'Building and pushing Docker image...'
-                // Using Groovy string for variable interpolation 
-                sh "docker build -t praveenkumar446/django-image:latest:${env.BUILD_NUMBER} ."
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pip install flake8
+                    flake8 --max-line-length=120 --exclude=.venv
+                '''
             }
         }
-        
-        stage ('push to registry') {
+
+        /* ---------------------------
+           Bandit Security Scan
+        ----------------------------*/
+        stage('SAST - Bandit Scan') {
             steps {
-                script {
-                    withCredentials([string(credentialsId: 'docker-hub-credentials', variable: 'DOCKER_HUB_PASSWORD')]) {
-                        sh '''
-                            echo $DOCKER_HUB_PASSWORD | docker login -u praveenkumar446 --password-stdin
-                            docker push praveenkumar446/django-image:latest:${BUILD_NUMBER}
-                        '''
-                    }
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pip install bandit
+                    bandit -r . --exclude ${VENV_DIR},migrations,__pycache__ -ll || true
+                '''
+            }
+        }
+
+        /* ---------------------------
+           pip-audit SCA scan
+        ----------------------------*/
+        stage('SCA - pip-audit') {
+            steps {
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pip install pip-audit
+                    pip-audit
+                '''
+            }
+        }
+
+        /* ---------------------------
+           SonarQube Scan
+        ----------------------------*/
+        stage('SonarQube Analysis') {
+            steps {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                            -Dsonar.projectKey=MyStore \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=http://18.142.113.58:9000 \
+                            -Dsonar.login=$SONAR_TOKEN
+                    '''
                 }
             }
         }
 
-        stage ('update deployment files') {
+        /* ---------------------------
+           Install Dependencies
+        ----------------------------*/
+        stage('Install Dependencies') {
             steps {
-                echo 'Updating deployment files...'
-                // Using Groovy string for variable interpolation
-                sh "sed -i 's|image: praveenkumar446/django-image:.*|image: praveenkumar446/django-image:latest:${env.BUILD_NUMBER}|' k8s/deployment.yaml"
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pip install -r requirements.txt
+                '''
             }
+        }
+
+        /* ---------------------------
+           Run Django Unit Tests
+        ----------------------------*/
+        stage('Unit Tests with Coverage') {
+            steps {
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pip install coverage
+                    coverage run manage.py test
+                    coverage report
+                    coverage xml
+                '''
+            }
+        }
+
+        /* ---------------------------
+           Build Docker Image
+        ----------------------------*/
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+            }
+        }
+
+        // ----------------------- SCAN DOCKER IMAGE -----------------------
+        stage('Scan Docker Image') {
+            steps {
+                sh """
+                    trivy image \
+                        --scanners vuln \
+                        --offline-scan \
+                        ${registry}:latest \
+                        > trivyresults.txt
+                """
+            }
+        }
+
+        /* ---------------------------
+           Docker Push
+        ----------------------------*/
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-reistry-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
+                    '''
+                }
+            }
+        }
+
+        /* ---------------------------
+           Update deployment.yaml in Repo
+        ----------------------------*/
+        stage('Update Deployment Files') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'git-credentials', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                    sh '''
+                        git config --global user.email "praveenchenu@gmail.com"
+                        git config --global user.name "praveen"
+
+                        sed -i "s|image:.*|image: ${DOCKER_IMAGE}:${BUILD_NUMBER}|" deployment.yaml
+
+                        git add deployment.yaml
+                        git commit -m "Update image tag to ${BUILD_NUMBER}" || echo "No changes"
+                        git push https://${GIT_USER}:${GIT_PASS}@github.com/Praveenchenu/My_Store.git HEAD:master
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully!"
+        }
+        failure {
+            echo "Pipeline failed! Check logs."
         }
     }
 }
