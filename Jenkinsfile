@@ -13,11 +13,14 @@ pipeline {
         }
 
         stage ('build') {
-            steps {
-                echo 'Building the project...'
-                sh 'mvn clean install'
-            }
+    steps {
+        echo 'Building the project...'
+        // Assuming your pom.xml is in a subdirectory named 'My_Store'
+        dir('My_Store') { 
+            sh 'mvn clean install'
         }
+    }
+}
 
         stage ('sonarQube') {
             steps {
