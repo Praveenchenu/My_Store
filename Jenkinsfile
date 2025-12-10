@@ -92,7 +92,7 @@ pipeline {
                         ${SCANNER_HOME}/bin/sonar-scanner \
                             -Dsonar.projectKey=My_Store \
                             -Dsonar.sources=. \
-                            -Dsonar.host.url=http://18.142.113.58:9000 \
+                            -Dsonar.host.url=http://13.212.72.87:9000 \
                             -Dsonar.login=$SONAR_TOKEN
                     '''
                 }
