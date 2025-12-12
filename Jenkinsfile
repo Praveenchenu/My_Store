@@ -131,13 +131,14 @@ pipeline {
                     string(credentialsId: 'access-key', variable: 'AWS_ACCESS_KEY'),
                     string(credentialsId: 'secret-key', variable: 'AWS_SECRET_KEY')
                 ]) {
-                    sh '''
+                sh """
+					#!/bin/bash
+                        set -e
                         aws ecr get-login-password --region us-east-1 | \
                         docker login --username AWS --password-stdin ${params.AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
+                        docker tag django-project:latest ${params.AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/django-project:lates
+                """
 
-                        docker tag ${params.ECR_REPO_NAME} ${params.AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${params.ECR_REPO_NAME}:${BUILD_NUMBER}
-                        docker tag ${params.ECR_REPO_NAME} ${params.AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${params.ECR_REPO_NAME}:latest
-                    '''
                 }
             }
         }
@@ -145,11 +146,14 @@ pipeline {
         stage('12. Push Image') {
             steps {
                 sh '''
-                    docker push ${params.AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${params.ECR_REPO_NAME}:${BUILD_NUMBER}
-                    docker push ${params.AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${params.ECR_REPO_NAME}:latest
+				    #!/bin/bash
+                        set -e
+                        docker push ${params.AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${params.ECR_REPO_NAME}:${BUILD_NUMBER}
+                        docker push ${params.AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${params.ECR_REPO_NAME}:latest
                 '''
+                }
             }
-        }
+
 
         stage('13. Cleanup') {
             steps {
